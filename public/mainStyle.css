@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel&family=Cinzel+Decorative:wght@700&family=Exo+2:wght@300&family=Manrope&family=Michroma&family=Nunito:wght@300&family=Orbitron&family=Outfit:wght@500&family=Philosopher&family=Prosto+One&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+input[type="text"]:focus~.input-text,
+input[type="text"]:not(:placeholder-shown)~.input-text {
+    @apply text-blue-500 transform -translate-y-4 -translate-x-5 scale-75 bg-slate-900;
+}
+
+.-m-100 {
+    margin: -60%;
+}
+
+.scroll_bar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.scroll_bar::-webkit-scrollbar-track {
+    background: rgb(15, 23, 42);
+}
+
+.scroll_bar::-webkit-scrollbar-thumb {
+    background-color: #1eacfe;
+    border-radius: 5rem;
+}
+
+
+.font-michroma {
+    font-family: 'michroma';
+}
+
+.font-nunito {
+    font-family: 'nunito';
+}
+
+.font-exo {
+    font-family: 'exo 2';
+}
+
+.font-outfit {
+    font-family: 'outfit', sans-serif;
+}
+
+.background_img {
+    background-image: url('../src/assets/low-poly-grid-haikei.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+.morp {
+    background: linear-gradient(145deg, #202c3f, #1b2535);
+    box-shadow: 16px 16px 32px #161e2b,
+        -16px -16px 32px #26344b;
+}
+
+.bgimg {
+    background-image: url('../src/assets/blurry-gradient-haikei.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.bg-footer {
+    background-color: #0099ff;
+}
+
+.bg-search {
+    background-image: url('../src/assets/searchbg.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
