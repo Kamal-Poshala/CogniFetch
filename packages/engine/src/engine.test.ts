@@ -111,6 +111,73 @@ describe('RetrievalEngine', () => {
     expect(restored.vocabularySize).toBe(engine.vocabularySize);
   });
 
+  it('echoes passthrough meta on every hit and through serialisation', () => {
+    const withMeta = RetrievalEngine.build([
+      {
+        id: 'm1',
+        title: 'Consensus protocols',
+        body: 'byzantine fault tolerance',
+        meta: { category: 'cs.DC', year: 2024 },
+      },
+      {
+        id: 'm2',
+        title: 'Neural networks',
+        body: 'gradient descent optimisation',
+        meta: { category: 'cs.LG', year: 2023 },
+      },
+    ]);
+    const hit = withMeta.search({ query: 'byzantine' }).hits[0];
+    expect(hit?.id).toBe('m1');
+    expect(hit?.meta).toEqual({ category: 'cs.DC', year: 2024 });
+
+    const restored = RetrievalEngine.fromJSON(
+      JSON.parse(JSON.stringify(withMeta.toJSON())) as ReturnType<typeof withMeta.toJSON>,
+    );
+    expect(restored.search({ query: 'byzantine' }).hits[0]?.meta).toEqual({
+      category: 'cs.DC',
+      year: 2024,
+    });
+  });
+
+  it('tallies facets and applies filters over the matched set', () => {
+    const corpus: EngineDocument[] = [
+      { id: 'a', title: 'consensus', body: 'distributed consensus', meta: { cat: 'cs.DC' } },
+      {
+        id: 'b',
+        title: 'consensus voting',
+        body: 'distributed consensus voting',
+        meta: { cat: 'cs.DC' },
+      },
+      {
+        id: 'c',
+        title: 'consensus learning',
+        body: 'distributed consensus in learning',
+        meta: { cat: 'cs.LG' },
+      },
+      {
+        id: 'd',
+        title: 'unrelated topic',
+        body: 'compilers and type systems',
+        meta: { cat: 'cs.PL' },
+      },
+    ];
+    const eng = RetrievalEngine.build(corpus);
+    const res = eng.search({ query: 'consensus', facets: ['cat'] });
+    expect(res.facets.cat).toEqual([
+      { value: 'cs.DC', count: 2 },
+      { value: 'cs.LG', count: 1 },
+    ]);
+
+    const filtered = eng.search({
+      query: 'consensus',
+      facets: ['cat'],
+      filters: { cat: ['cs.LG'] },
+    });
+    expect(filtered.totalHits).toBe(1);
+    expect(filtered.hits.map((h) => h.id)).toEqual(['c']);
+    expect(filtered.facets.cat).toEqual([{ value: 'cs.LG', count: 1 }]);
+  });
+
   it('rejects duplicate document ids', () => {
     expect(() => {
       RetrievalEngine.build([

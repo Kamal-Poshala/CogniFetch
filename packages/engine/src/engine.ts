@@ -3,6 +3,7 @@ import { TopKHeap } from './heap.js';
 import { makeSnippet, DEFAULT_SNIPPET_OPTIONS, type SnippetOptions } from './snippet.js';
 import {
   DEFAULT_OPTIONS,
+  type DocMeta,
   type EngineDocument,
   type EngineOptions,
   type Posting,
@@ -17,6 +18,7 @@ interface DocRecord {
   externalId: string;
   title: string;
   body: string;
+  meta: DocMeta;
   length: number;
   /** Euclidean norm of the lnc weight vector. */
   norm: number;
@@ -33,6 +35,23 @@ export interface BuildConfig extends Partial<EngineOptions> {
 }
 
 const lnPlus1 = (x: number): number => 1 + Math.log(x);
+
+/** Normalise a meta value to a list of string tokens for faceting / filtering. */
+function metaValues(value: DocMeta[string] | undefined): string[] {
+  if (value == null) return [];
+  if (Array.isArray(value)) return value.map(String);
+  return [String(value)];
+}
+
+/** A doc passes filters when, for every key, one of its meta values is allowed. */
+function metaSatisfiesFilters(meta: DocMeta, filters: Record<string, string[]>): boolean {
+  for (const [key, allowed] of Object.entries(filters)) {
+    if (allowed.length === 0) continue;
+    const values = new Set(metaValues(meta[key]));
+    if (!allowed.some((a) => values.has(a))) return false;
+  }
+  return true;
+}
 
 /**
  * In-memory retrieval engine.
@@ -112,6 +131,7 @@ export class RetrievalEngine {
       externalId: doc.id,
       title: doc.title,
       body: doc.body,
+      meta: doc.meta ?? {},
       length: titleTokens.length + bodyTokens.length,
       norm: Math.sqrt(sumSq) || 1,
       terms: this.keepDocTerms ? tf : undefined,
@@ -144,7 +164,7 @@ export class RetrievalEngine {
     const internal = this.externalToInternal.get(id);
     if (internal === undefined) return undefined;
     const rec = this.docs[internal]!;
-    return { id: rec.externalId, title: rec.title, body: rec.body };
+    return { id: rec.externalId, title: rec.title, body: rec.body, meta: rec.meta };
   }
 
   /** Analyse a query into the stemmed terms used for retrieval. */
@@ -202,6 +222,7 @@ export class RetrievalEngine {
         terms: usedTerms,
         totalHits: 0,
         hits: [],
+        facets: {},
         tookMs: performance.now() - started,
       };
     }
@@ -242,10 +263,31 @@ export class RetrievalEngine {
       }
     }
 
+    const filters = params.filters;
+    const facetKeys = params.facets ?? [];
+    const facetCounts = new Map<string, Map<string, number>>();
+    for (const key of facetKeys) facetCounts.set(key, new Map());
+
     const heap = new TopKHeap(offset + limit);
+    let matchedCount = 0;
     for (const doc of touched) {
-      const finalScore = scores[doc]! / (this.docs[doc]!.norm * qNorm);
-      heap.push(doc, finalScore);
+      const rec = this.docs[doc]!;
+      if (filters && !metaSatisfiesFilters(rec.meta, filters)) continue;
+      matchedCount++;
+      heap.push(doc, scores[doc]! / (rec.norm * qNorm));
+      for (const key of facetKeys) {
+        const bucket = facetCounts.get(key)!;
+        for (const value of metaValues(rec.meta[key])) {
+          bucket.set(value, (bucket.get(value) ?? 0) + 1);
+        }
+      }
+    }
+
+    const facets: SearchResult['facets'] = {};
+    for (const [key, counts] of facetCounts) {
+      facets[key] = [...counts.entries()]
+        .map(([value, count]) => ({ value, count }))
+        .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
     }
 
     const ranked = heap.toSorted().slice(offset, offset + limit);
@@ -259,6 +301,7 @@ export class RetrievalEngine {
         rank: offset + i + 1,
         matchedTerms,
         title: rec.title,
+        meta: rec.meta,
         snippet: wantSnippets
           ? makeSnippet(`${rec.title}. ${rec.body}`, usedTerms, this.snippetOptions)
           : null,
@@ -268,8 +311,9 @@ export class RetrievalEngine {
     return {
       query: params.query,
       terms: usedTerms,
-      totalHits: touched.length,
+      totalHits: filters ? matchedCount : touched.length,
       hits,
+      facets,
       tookMs: performance.now() - started,
     };
   }
@@ -293,6 +337,7 @@ export class RetrievalEngine {
         body: d.body,
         length: d.length,
         norm: d.norm,
+        meta: d.meta,
       })),
     };
   }
@@ -311,6 +356,7 @@ export class RetrievalEngine {
         externalId: d.externalId,
         title: d.title,
         body: d.body,
+        meta: d.meta ?? {},
         length: d.length,
         norm: d.norm,
         terms: undefined,
