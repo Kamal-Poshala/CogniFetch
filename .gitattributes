@@ -1,0 +1,16 @@
+# Normalise line endings to LF for all text files in the repo.
+* text=auto eol=lf
+
+# Explicitly binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.traineddata binary
+
+# Generated / vendored — collapse in diffs
+package-lock.json linguist-generated=true
+data/seed/** linguist-generated=true

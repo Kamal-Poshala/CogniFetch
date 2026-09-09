@@ -1,0 +1,9 @@
+dist
+build
+coverage
+node_modules
+data
+benchmarks/results
+apps/web/dist
+package-lock.json
+*.md
