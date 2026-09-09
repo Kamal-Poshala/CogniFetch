@@ -36,28 +36,7 @@ export {
   collapseWhitespace,
   stripLatex,
 } from './text.js';
-export {
-  synthesizeScan,
-  wrapText,
-  OcrEngine,
-  structureOcr,
-  scoreAccuracy,
-  aggregateAccuracy,
-  levenshtein,
-  DEFAULT_SYNTH_OPTIONS,
-  type SynthPaper,
-  type SynthOptions,
-  type SynthResult,
-  type StructuredOcr,
-  type AccuracyScore,
-  type AggregateAccuracy,
-  type OcrPageResult,
-} from './ocr/index.js';
-export {
-  ocrPaths,
-  generateScans,
-  runOcr,
-  evaluateOcr,
-  type OcrPaths,
-  type OcrResultRow,
-} from './ocr/pipeline.js';
+
+// The OCR pipeline (sharp, tesseract.js, pdf-lib) is deliberately NOT re-exported
+// here — import it from '@cognifetch/ingest/ocr' so the API server never pulls in
+// those native dependencies.
