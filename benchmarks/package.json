@@ -1,0 +1,20 @@
+{
+  "name": "@cognifetch/benchmarks",
+  "version": "1.0.0",
+  "description": "Latency benchmark: inverted index vs linear scan over the corpus.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck:tests": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "bench": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@cognifetch/engine": "*",
+    "@cognifetch/ingest": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.13"
+  }
+}

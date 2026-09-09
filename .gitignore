@@ -31,8 +31,6 @@ logs/
 # Coverage / test artifacts
 coverage/
 .nyc_output/
-benchmarks/results/*.json
-!benchmarks/results/.gitkeep
 
 # Editor / OS
 .DS_Store
