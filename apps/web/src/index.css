@@ -1,0 +1,51 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink-950: #070b14;
+  --color-ink-900: #0b1220;
+  --color-ink-850: #111a2e;
+  --color-ink-800: #16213a;
+  --color-ink-700: #223052;
+  --color-ink-600: #33456f;
+  --color-mist-400: #8aa0c6;
+  --color-mist-300: #aebdd8;
+  --color-mist-200: #d5deef;
+  --color-accent-400: #38bdf8;
+  --color-accent-500: #0ea5e9;
+  --color-accent-300: #7dd3fc;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-ink-950 text-mist-200 antialiased;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+  }
+  ::selection {
+    @apply bg-accent-500/30 text-white;
+  }
+  mark {
+    @apply rounded bg-accent-400/20 px-0.5 text-accent-300;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-ink-700/70 bg-ink-900/60 backdrop-blur-sm;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-ink-700 bg-ink-850 px-2.5 py-1 text-xs font-medium text-mist-300 transition hover:border-accent-500/60 hover:text-accent-300;
+  }
+  .chip-active {
+    @apply border-accent-500 bg-accent-500/15 text-accent-300;
+  }
+}
