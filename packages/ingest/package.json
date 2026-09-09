@@ -1,0 +1,33 @@
+{
+  "name": "@cognifetch/ingest",
+  "version": "1.0.0",
+  "description": "Ingestion pipelines: arXiv OAI-PMH harvest, index builder, seed loader, OCR pipeline.",
+  "type": "module",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "harvest": "tsx src/cli/harvest.ts",
+    "index:build": "tsx src/cli/index-build.ts",
+    "seed:load": "tsx src/cli/seed-load.ts",
+    "seed:dump": "tsx src/cli/seed-dump.ts",
+    "seed:harvest": "tsx src/cli/seed-harvest.ts",
+    "search:file": "tsx src/cli/search-file.ts",
+    "ocr:synth": "tsx src/cli/ocr-synth.ts",
+    "ocr:run": "tsx src/cli/ocr-run.ts",
+    "ocr:eval": "tsx src/cli/ocr-eval.ts"
+  },
+  "dependencies": {
+    "@cognifetch/engine": "*",
+    "dotenv": "^17.4.2",
+    "fast-xml-parser": "^5.11.1",
+    "mongodb": "^7.6.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.13"
+  }
+}

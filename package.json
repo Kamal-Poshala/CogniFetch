@@ -23,6 +23,8 @@
     "test:watch": "vitest",
     "dev": "npm run dev --workspace @cognifetch/server & npm run dev --workspace @cognifetch/web",
     "harvest": "npm run harvest --workspace @cognifetch/ingest --",
+    "seed:harvest": "npm run seed:harvest --workspace @cognifetch/ingest --",
+    "search:file": "npm run search:file --workspace @cognifetch/ingest --",
     "index:build": "npm run index:build --workspace @cognifetch/ingest --",
     "ocr:synth": "npm run ocr:synth --workspace @cognifetch/ingest --",
     "ocr:run": "npm run ocr:run --workspace @cognifetch/ingest --",
