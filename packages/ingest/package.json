@@ -6,6 +6,16 @@
   "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./ocr": {
+      "types": "./dist/ocr-entry.d.ts",
+      "default": "./dist/ocr-entry.js"
+    }
+  },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "typecheck:tests": "tsc -p tsconfig.json --noEmit",
@@ -15,6 +25,7 @@
     "seed:load": "tsx src/cli/seed-load.ts",
     "seed:dump": "tsx src/cli/seed-dump.ts",
     "seed:harvest": "tsx src/cli/seed-harvest.ts",
+    "seed:index": "tsx src/cli/seed-and-index.ts",
     "search:file": "tsx src/cli/search-file.ts",
     "ocr:synth": "tsx src/cli/ocr-synth.ts",
     "ocr:run": "tsx src/cli/ocr-run.ts",
