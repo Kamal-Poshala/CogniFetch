@@ -43,11 +43,48 @@ export function documentsCollection(db: Db): Collection<StoredDocument> {
   return db.collection<StoredDocument>(COLLECTION);
 }
 
-/** Map a stored document to the shape the retrieval engine indexes. */
-export function toEngineDocument(
-  doc: Pick<StoredDocument, '_id' | 'title' | 'abstract'>,
-): EngineDocument {
-  return { id: doc._id, title: doc.title, body: doc.abstract };
+type EngineDocFields = Pick<
+  StoredDocument,
+  | '_id'
+  | 'title'
+  | 'abstract'
+  | 'source'
+  | 'primaryCategory'
+  | 'categories'
+  | 'authors'
+  | 'published'
+  | 'arxivUrl'
+>;
+
+/** Fields the engine needs projected out of MongoDB. */
+export const ENGINE_DOC_PROJECTION = {
+  _id: 1,
+  title: 1,
+  abstract: 1,
+  source: 1,
+  primaryCategory: 1,
+  categories: 1,
+  authors: 1,
+  published: 1,
+  arxivUrl: 1,
+} as const;
+
+/** Map a stored document to the shape the retrieval engine indexes, carrying
+ * display/facet metadata through as opaque `meta`. */
+export function toEngineDocument(doc: EngineDocFields): EngineDocument {
+  return {
+    id: doc._id,
+    title: doc.title,
+    body: doc.abstract,
+    meta: {
+      source: doc.source,
+      primaryCategory: doc.primaryCategory,
+      categories: doc.categories,
+      authors: doc.authors.slice(0, 8),
+      published: doc.published,
+      url: doc.arxivUrl,
+    },
+  };
 }
 
 export async function ensureIndexes(db: Db): Promise<void> {
@@ -86,7 +123,7 @@ export async function countDocuments(db: Db, source?: DocumentSource): Promise<n
 /** Async-iterate the whole corpus in `_id` order, projecting only index fields. */
 export async function* iterateEngineDocuments(db: Db): AsyncGenerator<EngineDocument> {
   const cursor = documentsCollection(db)
-    .find({}, { projection: { _id: 1, title: 1, abstract: 1 } })
+    .find({}, { projection: ENGINE_DOC_PROJECTION })
     .sort({ _id: 1 });
   for await (const doc of cursor) {
     yield toEngineDocument(doc);

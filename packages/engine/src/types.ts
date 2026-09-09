@@ -1,3 +1,8 @@
+/** Opaque per-document metadata the engine stores and echoes back but never
+ * interprets (category, authors, URLs, source flag, …). Kept so callers can
+ * render results and compute facets without a second data-store round trip. */
+export type DocMeta = Record<string, string | string[] | number | boolean | null>;
+
 /**
  * A document as handed to the engine for indexing. `id` is the caller's stable
  * identifier (e.g. an arXiv id); the engine assigns its own dense integer id
@@ -8,6 +13,8 @@ export interface EngineDocument {
   title: string;
   /** Main searchable text (for CogniFetch: the abstract, optionally + OCR body). */
   body: string;
+  /** Optional passthrough metadata, returned on every hit. */
+  meta?: DocMeta;
 }
 
 /** Tunable knobs for indexing and scoring. */
@@ -69,6 +76,14 @@ export interface SearchHit {
   /** Highlighted snippet with <mark>…</mark> around matches, or null if unavailable. */
   snippet: string | null;
   title: string;
+  /** Passthrough metadata supplied at index time. */
+  meta: DocMeta;
+}
+
+/** One bucket of a facet: a metadata value and how many matches carried it. */
+export interface FacetBucket {
+  value: string;
+  count: number;
 }
 
 export interface SearchResult {
@@ -78,6 +93,8 @@ export interface SearchResult {
   /** Total number of documents that matched at least one term. */
   totalHits: number;
   hits: SearchHit[];
+  /** Value counts for each requested facet key, over *all* matched documents. */
+  facets: Record<string, FacetBucket[]>;
   /** Wall-clock time spent scoring + ranking, milliseconds. */
   tookMs: number;
 }
@@ -90,6 +107,10 @@ export interface SearchParams {
   offset?: number;
   /** Generate highlighted snippets (adds a little latency). */
   snippets?: boolean;
+  /** Metadata keys to tally across the matched set (e.g. `["primaryCategory"]`). */
+  facets?: string[];
+  /** Keep only documents whose meta[key] equals / contains one of the values. */
+  filters?: Record<string, string[]>;
 }
 
 /** Serialisable form of a built index, for persistence in MongoDB. */
@@ -106,5 +127,6 @@ export interface SerializedIndex {
     body: string;
     length: number;
     norm: number;
+    meta: DocMeta;
   }>;
 }

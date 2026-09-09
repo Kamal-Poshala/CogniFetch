@@ -14,8 +14,8 @@
     "benchmarks"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "tsc -b && npm run build --workspaces --if-present",
+    "typecheck": "tsc -b && npm run typecheck:tests --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
