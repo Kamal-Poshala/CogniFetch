@@ -2,9 +2,14 @@
   "name": "cognifetch",
   "version": "1.0.0",
   "private": true,
-  "description": "Full-stack NLP search & retrieval engine: inverted-index + TF-IDF cosine ranking over 10k+ academic documents, with an OCR/NLP ingestion pipeline and a React search UI.",
+  "description": "Full-text search engine for academic papers: a hand-rolled inverted index with TF-IDF cosine ranking over 12k+ arXiv abstracts, an OCR ingestion pipeline, a REST API, and a React search UI.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kamal-Poshala/CogniFetch.git"
+  },
+  "homepage": "https://github.com/Kamal-Poshala/CogniFetch#readme",
   "engines": {
     "node": ">=20"
   },
