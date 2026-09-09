@@ -25,12 +25,12 @@ export interface SynthOptions {
 }
 
 export const DEFAULT_SYNTH_OPTIONS: SynthOptions = {
-  width: 1000,
-  charsPerLine: 78,
-  maxSkewDeg: 1.8,
-  blurSigma: 0.6,
-  noiseSigma: 14,
-  jpegQuality: 52,
+  width: 1100,
+  charsPerLine: 84,
+  maxSkewDeg: 1.4,
+  blurSigma: 0.45,
+  noiseSigma: 9,
+  jpegQuality: 62,
   seed: 1,
 };
 
