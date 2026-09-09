@@ -44,19 +44,24 @@ async function main(): Promise<void> {
     .map((s) => s.trim());
   // Default to recent papers so the committed sample is recognisable.
   const from = arg('from', new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10));
+  const until = arg('until', '');
+  const range = until ? { from, until } : { from };
 
   const client = new ArxivOaiClient({
     endpoint: config.ARXIV_OAI_ENDPOINT,
     requestDelayMs: config.ARXIV_REQUEST_DELAY_MS,
   });
 
-  console.log(`Harvesting ${count} seed records from sets [${sets.join(', ')}] since ${from}...`);
+  console.log(
+    `Harvesting ${count} seed records from sets [${sets.join(', ')}] ` +
+      `in [${from} .. ${until || 'now'}]...`,
+  );
   const docs: StoredDocument[] = [];
   const seen = new Set<string>();
 
   for (const set of sets) {
     if (docs.length >= count) break;
-    let page = await client.listRecords(set, { from });
+    let page = await client.listRecords(set, range);
     for (;;) {
       for (const rec of page.records) {
         if (docs.length >= count) break;
