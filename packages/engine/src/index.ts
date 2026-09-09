@@ -16,4 +16,5 @@ export {
   type SearchResult,
   type SearchParams,
   type SerializedIndex,
+  type FacetBucket,
 } from './types.js';

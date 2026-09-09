@@ -35,8 +35,16 @@ export default tseslint.config(
     },
   },
   {
-    // Root tooling config files live outside any package tsconfig.
-    files: ['*.js', '*.ts', '*.mjs', '*.cjs'],
+    // Tooling config files live outside any package's source tsconfig.
+    files: [
+      '*.js',
+      '*.mjs',
+      '*.cjs',
+      'eslint.config.js',
+      'vitest.config.ts',
+      '**/vite.config.ts',
+      '**/vitest.config.ts',
+    ],
     extends: [tseslint.configs.disableTypeChecked],
   },
   {
