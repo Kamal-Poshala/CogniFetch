@@ -1,50 +1,134 @@
 # CogniFetch
 
-CogniFetch is a modern, React-based web application designed to help users scrape, analyze, and organize study materials efficiently. Built with performance and aesthetics in mind, it features a premium dark-themed UI with glassmorphism effects.
+**A full-text search engine for academic papers** — a hand-rolled inverted index
+with TF-IDF cosine ranking over 12,000+ arXiv abstracts, an OCR ingestion
+pipeline that turns scanned PDFs into searchable records, a REST API, and a
+React search UI.
 
-## Features
+No search library. The tokenizer, Porter stemmer, inverted index, cosine
+scorer, and top-K selection are all implemented from scratch in
+[`packages/engine`](packages/engine) so the ranking behaviour and its cost are
+fully inspectable.
 
-- **Smart Scraping**: Fetch and process content from various sources.
-- **User Profiles**: personalized dashboard and settings.
-- **Responsive Design**: Fully responsive interface that works on all devices.
-- **Premium UI**: Dark mode, glassmorphism, and smooth animations using Tailwind CSS.
-- **Secure Authentication**: Login and registration functionality.
+```
+┌── ingestion ─────────────┐   ┌── query path ──────────────────────────┐
+│ arXiv OAI-PMH ─┐         │   │  GET /api/search?q=…                    │
+│ scanned PDFs ──┤→ Mongo ─┼──→│  → analyse → union query-term postings │
+│  (OCR + NLP) ──┘  (docs) │   │  → cosine(ltc query, lnc docs) → top-K │
+└──────────────────────────┘   │  → snippets + facets → JSON            │
+         │                     └────────────────────────────────────────┘
+         └─ index builder → gzipped inverted index in GridFS
+```
 
-## Tech Stack
+## Numbers
 
-- **Frontend**: [React](https://reactjs.org/), [Vite](https://vitejs.dev/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/), [Bootstrap](https://getbootstrap.com/) (integrated)
-- **Icons**: [React Icons](https://react-icons.github.io/react-icons/)
-- **Routing**: [React Router](https://reactrouter.com/)
+Measured, reproducible — see [`benchmarks/`](benchmarks) and
+[`packages/ingest`](packages/ingest).
 
-## Getting Started
+### Query latency — inverted index vs. linear scan
 
-Follow these steps to set up the project locally:
+12,000 documents · 31,651 terms · 200-query workload · Intel i7-13650HX · Node 22
 
-1.  **Clone the repository** (if you haven't already).
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
-3.  **Start the development server**:
-    ```bash
-    npm run dev
-    ```
-4.  **Build CSS (Development)**:
-    To watch for CSS changes and rebuild styles on the fly:
-    ```bash
-    npm run style
-    ```
+| Scorer | mean | p50 | p95 | p99 | QPS |
+|---|---:|---:|---:|---:|---:|
+| **Inverted index + TF-IDF cosine** | 0.17 ms | 0.04 ms | **0.79 ms** | 1.24 ms | 5,860 |
+| Linear scan (identical scores, every doc) | 3.52 ms | 3.40 ms | 5.91 ms | 6.86 ms | 284 |
 
-## Project Structure
+**→ 7.5× faster at p95, 87% p95 latency reduction.** Regenerate with `npm run bench`
+([`benchmarks/results/latest.md`](benchmarks/results/latest.md)).
 
-- `src/Components`: Reusable React components.
-- `src/assets`: Images and static assets.
-- `public/mainStyle.css`: Main source for Tailwind CSS directives and custom styles.
-- `src/style.css`: Generated CSS output (do not edit directly).
-- `tailwind.config.cjs`: Tailwind CSS configuration.
+### OCR ingestion accuracy
 
-## Customization
+60 held-out papers → degraded page scans → OCR → structured records, scored
+against the rendered ground truth:
 
-The project uses a customized Tailwind configuration. You can modify colors and fonts in `tailwind.config.cjs`.
-Global styles and utilities are defined in `public/mainStyle.css`.
+| Median CER | Mean CER | Mean WER | p90 CER | Quality-gate pass |
+|---:|---:|---:|---:|---:|
+| 0.20% | 12.07% | 12.90% | 33.47% | 100% |
+
+Most pages OCR near-perfectly; the error mass is a long tail of notation-dense
+pages. Regenerate with `npm run ocr:synth && npm run ocr:run && npm run ocr:eval`.
+
+## Quick start (Docker)
+
+```bash
+docker compose up --build
+```
+
+Brings up MongoDB, seeds it with the committed 600-document corpus, builds the
+index, and starts the API and UI:
+
+- UI → <http://localhost:8080>
+- API → <http://localhost:3500/api/search?q=diffusion+models>
+
+## Local development
+
+Requires Node 22+ and a MongoDB instance (`mongodb://localhost:27017`).
+
+```bash
+npm install
+cp .env.example .env                 # defaults work for a local Mongo
+
+npm run ingest:demo                  # load the seed corpus + build the index
+#   or: npm run harvest -- --limit 12000   (harvest a real corpus from arXiv)
+
+npm run dev                          # API on :3500, Vite UI on :5173
+```
+
+Other useful commands:
+
+| Command | Does |
+|---|---|
+| `npm test` | all workspace test suites (112 tests) |
+| `npm run lint` / `npm run typecheck` | ESLint (type-checked) / `tsc` |
+| `npm run bench` | latency benchmark → `benchmarks/results/` |
+| `npm run search:file -- "your query"` | ad-hoc search against a JSONL corpus, no DB |
+| `npm run harvest -- --limit N` | harvest N arXiv abstracts via OAI-PMH |
+| `npm run ocr:synth && npm run ocr:run && npm run ocr:eval` | the OCR pipeline |
+
+## How it works
+
+Full write-up in [`ARCHITECTURE.md`](ARCHITECTURE.md). In short:
+
+- **Analysis** — Unicode-normalise → split → stopword filter → Porter stem.
+- **Index** — `term → [{doc, tf}]` postings; per-document `lnc` vector norms
+  precomputed. Title terms are frequency-boosted.
+- **Ranking** — cosine similarity between an `ltc` query vector and `lnc`
+  document vectors (SMART notation), scoring only the documents that appear in
+  a query term's postings. A `TopKHeap` keeps the top results without sorting
+  the full candidate set. `RetrievalEngine.searchLinear()` computes the same
+  numbers by scanning every document — that's the benchmark baseline.
+- **Persistence** — MongoDB holds the documents; the built index is serialised,
+  gzipped, and stored in GridFS for fast API cold-starts (falling back to an
+  in-memory rebuild).
+- **OCR** — held-out papers are rendered to page images, degraded (skew, blur,
+  Gaussian noise, JPEG recompression), OCR'd with `tesseract.js`, de-hyphenated
+  and segmented into `{title, abstract}`, gated on an English-prose heuristic,
+  and indexed with their measured error rate recorded as provenance.
+
+## Project layout
+
+```
+packages/engine    retrieval library — zero runtime dependencies
+packages/ingest    arXiv OAI-PMH harvester, index builder, OCR pipeline, CLIs
+packages/server    Express REST API (search / documents / stats / health)
+apps/web           React + Vite + Tailwind search UI
+benchmarks         inverted-index vs linear-scan latency harness
+data/seed          committed 600-doc corpus + 120-doc held-out set (offline demo)
+```
+
+## Deployment
+
+See [`DEPLOY.md`](DEPLOY.md) for MongoDB Atlas + Render (API) + Vercel (UI).
+
+## Notes
+
+- arXiv metadata is harvested via OAI-PMH from `export.arxiv.org` under the
+  [arXiv API Terms of Use](https://info.arxiv.org/help/api/tou.html) — metadata
+  only, rate-limited to one request per 3 seconds, with links back to arXiv.
+- TypeScript is pinned to 5.9 (not the 7.x native compiler) because
+  `typescript-eslint` does not yet support TS ≥ 6.1; revisit when it does.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).

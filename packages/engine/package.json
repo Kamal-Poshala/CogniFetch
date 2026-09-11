@@ -1,0 +1,22 @@
+{
+  "name": "@cognifetch/engine",
+  "version": "1.0.0",
+  "description": "Framework-free retrieval engine: inverted index, TF-IDF cosine ranking, snippet highlighting.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck:tests": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

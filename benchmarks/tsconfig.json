@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"]
+  },
+  "references": [
+    { "path": "../packages/engine/tsconfig.build.json" },
+    { "path": "../packages/ingest/tsconfig.build.json" }
+  ],
+  "include": ["src/**/*"]
+}

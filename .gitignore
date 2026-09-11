@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+apps/web/dist/
+packages/*/dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Data / corpora / caches — everything under data/ is regenerable via scripts,
+# except the small committed seed corpus.
+data/*
+!data/seed/
+data/seed/*.tmp
+data/seed/*.gz
+*.log
+logs/
+.cache/
+.ocr-cache/
+*.traineddata
+
+# Coverage / test artifacts
+coverage/
+.nyc_output/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Docker
+.docker-data/

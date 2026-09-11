@@ -1,0 +1,59 @@
+name: cognifetch
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - '27017:27017'
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.runCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: load the committed seed corpus and build the index, then exit.
+  seed:
+    build:
+      context: .
+      target: ingest
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      MONGO_DB: cognifetch
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: ['packages/ingest/dist/cli/seed-and-index.js']
+    restart: 'no'
+
+  api:
+    build:
+      context: .
+      target: server
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      MONGO_DB: cognifetch
+      PORT: 3500
+      CORS_ORIGINS: http://localhost:8080
+      NODE_ENV: production
+    ports:
+      - '3500:3500'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - '8080:80'
+    depends_on:
+      - api
+
+volumes:
+  mongo-data:

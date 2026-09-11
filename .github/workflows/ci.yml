@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'rebuild/**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: lint · typecheck · build · test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      # Build first: workspace packages resolve each other via their built
+      # dist/*.d.ts (through node_modules symlinks), so type-aware lint and
+      # cross-package tests need dist/ to exist before they run.
+      - run: npm run build
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  docker:
+    name: docker images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build all targets
+        run: |
+          for target in server ingest web; do
+            docker buildx build --target "$target" --tag "cognifetch-$target:ci" \
+              --cache-from type=gha --cache-to type=gha,mode=max --load .
+          done
+      - name: Smoke test the stack
+        run: |
+          docker compose up -d --wait --wait-timeout 180
+          curl -fsS http://localhost:3500/health | tee /dev/stderr | grep -q '"status":"ok"'
+          curl -fsS "http://localhost:3500/api/search?q=neural+network&limit=3" | grep -q '"hits"'
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  benchmark:
+    name: latency benchmark (informational)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace @cognifetch/engine --workspace @cognifetch/ingest
+      - run: npm run bench -- --iterations 15
+      - name: Publish to job summary
+        if: always()
+        run: cat benchmarks/results/latest.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-result
+          path: benchmarks/results/
