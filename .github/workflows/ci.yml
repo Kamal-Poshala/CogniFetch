@@ -24,10 +24,13 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
+      # Build first: workspace packages resolve each other via their built
+      # dist/*.d.ts (through node_modules symlinks), so type-aware lint and
+      # cross-package tests need dist/ to exist before they run.
+      - run: npm run build
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run build
       - run: npm test
 
   docker:
