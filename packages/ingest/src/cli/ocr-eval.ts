@@ -33,6 +33,13 @@ async function main(): Promise<void> {
     }
   }
 
+  const worstRows = worst
+    .map(
+      (w) =>
+        `| \`${w.id}\` | ${(w.cer * 100).toFixed(1)}% | ${w.title.slice(0, 70).replace(/\|/g, '/')} |`,
+    )
+    .join('\n');
+
   const md = `## OCR pipeline accuracy
 
 _${new Date().toISOString()} · tesseract.js over synthetically degraded page rasters_
@@ -50,9 +57,15 @@ text that was rendered.
 | Passed the NLP quality gate | ${(usableRate * 100).toFixed(1)}% |
 
 Most pages OCR near-perfectly; the error mass is a long tail of
-notation-dense pages (QUBO formulations, interval-graph proofs) where OCR of
-academic text is genuinely hard. Retrieval tolerates the noise — every
-document still passed the language/structure gate and was indexed.
+notation- and diagram-dense pages where OCR of academic text is genuinely
+hard. Retrieval tolerates the noise — the overwhelming majority of documents
+still passed the language/structure gate and were indexed.
+
+Worst-performing pages in this run:
+
+| arXiv id | CER | Title |
+|---|---:|---|
+${worstRows}
 `;
   const outDir = resolve(REPO_ROOT, 'benchmarks/results');
   mkdirSync(outDir, { recursive: true });
