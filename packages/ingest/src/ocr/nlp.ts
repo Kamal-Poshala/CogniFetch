@@ -41,11 +41,23 @@ export function structureOcr(raw: string): StructuredOcr {
     .map((b) => b.trim())
     .filter(Boolean);
 
-  const titleBlock = blocks[0] ?? '';
-  const bodyBlocks = blocks.slice(1);
+  let title: string;
+  let abstract: string;
 
-  const title = collapseWhitespace(titleBlock).slice(0, 400);
-  const abstract = collapseWhitespace((bodyBlocks.length > 0 ? bodyBlocks : blocks).join(' '));
+  if (blocks.length >= 2) {
+    title = collapseWhitespace(blocks[0]!).slice(0, 400);
+    abstract = collapseWhitespace(blocks.slice(1).join(' '));
+  } else {
+    // No blank-line paragraph break survived OCR (common when the title wraps
+    // right into the body with no extra vertical gap). Fall back to the first
+    // line break instead of treating the whole page as both title and body.
+    const lines = (blocks[0] ?? '')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    title = collapseWhitespace(lines[0] ?? '').slice(0, 400);
+    abstract = collapseWhitespace(lines.slice(1).join(' ')) || title;
+  }
 
   const englishScore = englishStopwordRatio(abstract || title);
   const usable = title.length >= 8 && abstract.length >= 60 && englishScore >= 0.12;

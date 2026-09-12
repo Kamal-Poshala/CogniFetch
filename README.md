@@ -39,15 +39,24 @@ Measured, reproducible — see [`benchmarks/`](benchmarks) and
 
 ### OCR ingestion accuracy
 
-60 held-out papers → degraded page scans → OCR → structured records, scored
+2,500 held-out papers → degraded page scans → OCR → structured records, scored
 against the rendered ground truth:
 
 | Median CER | Mean CER | Mean WER | p90 CER | Quality-gate pass |
 |---:|---:|---:|---:|---:|
-| 0.20% | 12.07% | 12.90% | 33.47% | 100% |
+| 0.00% | 1.09% | 1.62% | 0.30% | 99.9% |
 
-Most pages OCR near-perfectly; the error mass is a long tail of notation-dense
-pages. Regenerate with `npm run ocr:synth && npm run ocr:run && npm run ocr:eval`.
+The overwhelming majority of pages OCR essentially perfectly; the small mean
+is a long tail of notation- and diagram-dense pages, which is exactly where
+OCR of academic text is genuinely hard (see
+[`benchmarks/results/ocr-accuracy.md`](benchmarks/results/ocr-accuracy.md) for
+the worst cases). Regenerate against a fresh 2,500-paper held-out set with:
+
+```bash
+npm run seed:harvest -- --count 2500 --sets cs --from 2024-01-01 --until 2024-12-31 --output data/bench/heldout-2500.jsonl
+npm run ocr:synth -- --input data/bench/heldout-2500.jsonl --count 2500 --out data/ocr-full
+npm run ocr:run -- --out data/ocr-full && npm run ocr:eval -- --out data/ocr-full
+```
 
 ## Quick start (Docker)
 

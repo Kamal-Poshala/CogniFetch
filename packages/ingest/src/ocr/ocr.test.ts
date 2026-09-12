@@ -73,6 +73,20 @@ describe('structureOcr', () => {
     expect(structureOcr(raw).abstract).toContain('convolutional networks');
   });
 
+  it('falls back to the first line break when no blank line survives OCR', () => {
+    // No blank line between title and body (title wrapped straight into the
+    // abstract) — must not duplicate the whole page into both fields.
+    const raw =
+      'A note on t-designs in isodual codes\n' +
+      'In the present paper, we construct 3-designs using extended binary ' +
+      'quadratic residue codes and their dual codes for several applications.';
+    const s = structureOcr(raw);
+    expect(s.title).toBe('A note on t-designs in isodual codes');
+    expect(s.abstract).toMatch(/^In the present paper/);
+    expect(s.abstract).not.toContain('A note on t-designs');
+    expect(s.usable).toBe(true);
+  });
+
   it('rejects OCR garbage', () => {
     const s = structureOcr('X9 !!!\n\n@@@ ~~~ qwx zzt vvm %%% |||  lkj hgf');
     expect(s.usable).toBe(false);
